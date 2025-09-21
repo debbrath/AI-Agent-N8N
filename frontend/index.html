@@ -1,25 +1,180 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>AI Agent Project</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Lovable — Article Summarizer</title>
+  <style>
+    :root {
+      --primary: #6366f1;
+      --secondary: #ec4899;
+      --background: #f9fafb;
+      --text-dark: #111827;
+      --text-light: #6b7280;
+      --success: #16a34a;
+      --error: #dc2626;
+    }
+
+    body {
+      font-family: "Inter", system-ui, sans-serif;
+      background: var(--background);
+      margin: 0;
+      padding: 0;
+      color: var(--text-dark);
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      padding: 40px 20px;
+      text-align: center;
+    }
+
+    header h1 { font-size: 2rem; margin: 0 0 10px; }
+    header p { font-size: 1.1rem; margin: 0; opacity: 0.9; }
+
+    main {
+      max-width: 600px;
+      margin: -30px auto 40px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+      padding: 32px;
+    }
+
+    label {
+      display: block;
+      margin-top: 16px;
+      font-weight: 600;
+      color: var(--text-dark);
+    }
+
+    input[type="text"], input[type="email"] {
+      width: 100%;
+      padding: 12px;
+      margin-top: 6px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border 0.2s;
+    }
+
+    input:focus { border-color: var(--primary); outline: none; }
+
+    button {
+      margin-top: 24px;
+      width: 100%;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover { background: #4f46e5; }
+
+    #status {
+      margin-top: 20px;
+      padding: 16px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      display: none;
+    }
+
+    #status.success { background: #dcfce7; color: var(--success); border: 1px solid #bbf7d0; }
+    #status.error { background: #fee2e2; color: var(--error); border: 1px solid #fecaca; }
+
+    .card {
+      margin-top: 20px;
+      padding: 20px;
+      border-radius: 12px;
+      background: #f3f4f6;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    .card h3 { margin-top: 0; color: var(--primary); }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>AI Article Processor</h1>
-    <form id="articleForm">
-      <label for="email">Email:</label>
-      <input type="email" id="email" placeholder="Enter your email" required>
+  <header>
+    <h1>Lovable — Smart Article Summarizer</h1>
+    <p>Get instant summaries & insights delivered to your inbox</p>
+  </header>
 
-      <label for="url">Article URL:</label>
-      <input type="url" id="url" placeholder="Enter article URL" required>
-
-      <button type="submit">Process Article</button>
+  <main>
+    <form id="form">
+      <label for="email">Your Email</label>
+      <input id="email" type="email" required/>
+      <label for="url">Article URL</label>
+      <input id="url" type="text" required/>
+      <button type="submit">Summarize Article</button>
     </form>
 
     <div id="status"></div>
-  </div>
-  <script src="script.js"></script>
+    <div id="results"></div>
+  </main>
+
+  <footer>
+    &copy; 2025 Lovable AI Tools. Built with ❤️ and n8n.
+  </footer>
+
+  <script>
+    const API_URL = "http://127.0.0.1:8000/submit";
+    const form = document.getElementById('form');
+    const status = document.getElementById('status');
+    const results = document.getElementById('results');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      status.style.display = "block";
+      status.className = "";
+      status.textContent = "⏳ Sending request...";
+      results.innerHTML = "";
+
+      const email = document.getElementById('email').value.trim();
+      const article_url = document.getElementById('url').value.trim();
+
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, article_url })
+        });
+
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+
+        status.className = "success";
+        status.textContent = `✅ Success! Session ID: ${data.session_id}. Check your email shortly.`;
+
+        if (data.summary) {
+          results.innerHTML = `
+            <div class="card">
+              <h3>Summary</h3>
+              <p>${data.summary}</p>
+            </div>
+          `;
+        }
+
+        if (data.insights && data.insights.length > 0) {
+          results.innerHTML += `
+            <div class="card">
+              <h3>Key Insights</h3>
+              <ul>${data.insights.map(i => `<li>${i}</li>`).join("")}</ul>
+            </div>
+          `;
+        }
+
+      } catch (err) {
+        status.className = "error";
+        status.textContent = `❌ Error: ${err.message}`;
+        console.error("Fetch error:", err);
+      }
+    });
+  </script>
 </body>
 </html>
