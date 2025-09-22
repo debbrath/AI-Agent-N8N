@@ -1,0 +1,328 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "6f5bca51-eb77-4830-8d61-f69e3226d04d",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -864,
+        32
+      ],
+      "id": "9bccea39-476e-40c4-8bc1-e95c239ff1a7",
+      "name": "Webhook",
+      "webhookId": "6f5bca51-eb77-4830-8d61-f69e3226d04d"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.body.article_url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -656,
+        32
+      ],
+      "id": "395813bc-90e6-46cd-a6d2-d9c9f429b102",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "functionCode": "const html = $input.item.json[\"body\"] || $input.item.json[\"response\"] || $json[\"body\"] || $json[\"response\"] || $json[\"data\"] || $json[\"content\"] || \"\";\nconst stripped = html.replace(/<script[^>]*>[\\s\\S]*?<\\/script>/gi, '')\n  .replace(/<style[^>]*>[\\s\\S]*?<\\/style>/gi, '')\n  .replace(/<[^>]+>/g, ' ')\n  .replace(/\\s+/g, ' ') \n  .trim()\n  .slice(0, 38000);\nreturn [{ json: { article_text: stripped, article_url: $json[\"article_url\"], email: $json[\"email\"], session_id: $json[\"session_id\"] } }];"
+      },
+      "name": "Extract Text (Function)",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        32
+      ],
+      "id": "96469ef0-09e9-427e-8419-eb5a26037c2a"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=email : {{ $('Webhook').item.json.body.email }}\n\ntools:\n1. HTTP Request: Get HTTP website as given by the user.\n2. Extract Text (Function): Scrap data from the specific website\n2. send_summary_to_gmail: Send mail to user\n3. append_request_in_google_sheets: Append or update row in sheet in Google Sheets\n\n\nYou are an powerful agent that: \n1) Receive article data from a user given website link\n2) read all the data and summerize the data based on the following articles {{ $json.article_text }}\n3. Summarize the article into a short summary (3–5 sentences).\n4. Extract 3–5 key insights.\n5. Append or update row in sheet in Google Sheets : write the summary at the sumamry column of the sheet.\n6. Append or update row in sheet in Google Sheets : write the insights data into the insights column of the sheet.\n7. Send email in Gmail : send mail to {{ $('Webhook').item.json.body.email }} , where the mail body would be the summary and the insight togather with the most beautiful and  proper professionalformat.\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -272,
+        32
+      ],
+      "id": "9e25f386-2ee0-4a9c-8934-40e15c7a6765",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -416,
+        240
+      ],
+      "id": "2016c10e-bc6d-4fee-bdbd-50e5a2da755b",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "6uC47Zy8zmXFPBhP",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Webhook').item.json.body.session_id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -272,
+        240
+      ],
+      "id": "1d931e00-d4c4-4f73-b327-9b33dbdaa76f",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.email }}",
+        "subject": "=Summarize of  {{ $('Webhook').item.json.body.article_url }}",
+        "emailType": "text",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        -128,
+        240
+      ],
+      "id": "55d97670-74c6-4dbf-b23a-3500961e1f60",
+      "name": "send_summary_to_gmail",
+      "webhookId": "10efac8b-5831-462d-83d4-fcb51a2f6dd3",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "695Le9txdnUU4lq8",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1eD10NAJ7zaOLWRu5Dwxr-YtU5NW8027QDqwzCewJ6QM",
+          "mode": "list",
+          "cachedResultName": "Ostad_Assignment",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1eD10NAJ7zaOLWRu5Dwxr-YtU5NW8027QDqwzCewJ6QM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1eD10NAJ7zaOLWRu5Dwxr-YtU5NW8027QDqwzCewJ6QM/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Session ID": "={{ $('Webhook').item.json.body.session_id }}",
+            "ExecutionAt": "={{ $now }}",
+            "ExecutionFrom": "={{ $('Webhook').item.json.headers['x-real-ip'] }}",
+            "Article URL": "={{ $('Webhook').item.json.body.article_url }}",
+            "Summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Summary', ``, 'string') }}",
+            "Insights": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Insights', ``, 'string') }}",
+            "Email": "={{ $('Webhook').item.json.body.email }}"
+          },
+          "matchingColumns": [
+            "Session ID"
+          ],
+          "schema": [
+            {
+              "id": "Session ID",
+              "displayName": "Session ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ExecutionAt",
+              "displayName": "ExecutionAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ExecutionFrom",
+              "displayName": "ExecutionFrom",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Article URL",
+              "displayName": "Article URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Insights",
+              "displayName": "Insights",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        -32,
+        336
+      ],
+      "id": "a96a85d6-de5c-4a06-b7eb-b88858c65767",
+      "name": "append_request_in_google_sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nLVdQCaHMyv0I19i",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Extract Text (Function)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Text (Function)": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send_summary_to_gmail": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "append_request_in_google_sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "fbf6dfe2-607f-4a28-8335-1fbdc1cb94f5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8ba33b66f81223b3df077130725824c1eb545dd645bf5bdb697c3bde4b344074"
+  },
+  "id": "5Kpwm5e0kCn3x2v4",
+  "tags": []
+}

@@ -1,7 +1,4 @@
 
-
-
-
 import uuid
 import requests
 from fastapi import FastAPI
@@ -44,7 +41,7 @@ def serve_index():
 app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 
 # Replace with your n8n webhook URL
-N8N_WEBHOOK_URL = "https://ddnath.app.n8n.cloud/webhook-test/a3e730c5-bb2f-44ad-9896-19c89d11fd79"
+N8N_WEBHOOK_URL = "https://ddnath2001.app.n8n.cloud/webhook-test/6f5bca51-eb77-4830-8d61-f69e3226d04d"
 
 @app.post("/submit")
 def submit_article(data: ArticleRequest):
